@@ -1,0 +1,101 @@
+---
+
+---
+
+<div id="three-container"></div>
+
+<style>
+  #three-container {
+    width: 100dvw;
+    height: 100dvh; /* Full viewport height */
+    display: block;
+    position:absolute;
+    z-index: -1;
+  }
+</style>
+
+<script>
+//import type { ACTION_ERROR_CODES } from "astro:actions";
+import * as THREE from "three";
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+
+  //Texture Loader
+  const textureLoader = new THREE.TextureLoader();
+  const botyTexture = textureLoader.load('../textures/Boty.png');
+  //botyTexture.repeat.x = 1;
+  //botyTexture.repeat.y = .5;
+//botyTexture.wrapS = THREE.RepeatWrapping;
+//botyTexture.wrapT = THREE.RepeatWrapping;
+botyTexture.minFilter = THREE.NearestFilter;
+
+  
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const container = document.getElementById('three-container');
+    
+    // Set up the scene, camera, and renderer
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({
+   
+    });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    container.appendChild(renderer.domElement);
+
+//lights
+const light = new THREE.PointLight( 0xff0000, 1, 100 );
+light.position.set( 50, 50, 50 );
+scene.add( light );
+
+    // Add a simple cube to the scene
+    const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
+    const material = new THREE.ShaderMaterial({ 
+        vertexShader: `
+        uniform mat4 projectionMatrix;
+        uniform mat4 viewMatrix;
+        uniform mat4 modelMatrix;
+
+        attribute vec3 position;
+
+        void main()
+        {
+            gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
+        }
+    `,
+    fragmentShader: `
+        precision mediump float;
+
+        void main()
+        {
+            gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+        }
+    `
+     });
+    const knot = new THREE.Mesh(geometry, material);
+    scene.add(knot);
+
+    const controls = new OrbitControls( camera, renderer.domElement );
+
+    // Position the camera
+    camera.position.z = 25;
+
+    // Animation loop
+    const animate = function () {
+      requestAnimationFrame(animate);
+
+      controls.update();
+
+      renderer.render(scene, camera);
+    };
+
+    animate();
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+  });
+</script>
