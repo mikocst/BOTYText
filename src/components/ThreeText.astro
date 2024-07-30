@@ -15,20 +15,19 @@
 </style>
 
 <script>
-//import type { ACTION_ERROR_CODES } from "astro:actions";
+import type { ACTION_ERROR_CODES, ActionError } from "astro:actions";
+import { imageConfig } from "astro:assets";
 import * as THREE from "three";
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import vertexShader from '../shaders/vertex.glsl';
+import fragmentShader from '../shaders/fragment.glsl';
 
-
-  //Texture Loader
+  //Texture Loader and Initializing texture
   const textureLoader = new THREE.TextureLoader();
-  const botyTexture = textureLoader.load('../textures/Boty.png');
-  //botyTexture.repeat.x = 1;
-  //botyTexture.repeat.y = .5;
-//botyTexture.wrapS = THREE.RepeatWrapping;
-//botyTexture.wrapT = THREE.RepeatWrapping;
-botyTexture.minFilter = THREE.NearestFilter;
-
+  const boty = "../textures/Boty.png"
+  const texture = textureLoader.load(boty, (texture) => {
+    texture.minFilter = THREE.NearestFilter;
+  }) 
   
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -43,35 +42,24 @@ botyTexture.minFilter = THREE.NearestFilter;
     renderer.setSize(container.clientWidth, container.clientHeight);
     container.appendChild(renderer.domElement);
 
-//lights
-const light = new THREE.PointLight( 0xff0000, 1, 100 );
-light.position.set( 50, 50, 50 );
-scene.add( light );
-
-    // Add a simple cube to the scene
+    // Add Torus to Scene
     const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
     const material = new THREE.ShaderMaterial({ 
-        vertexShader: `
-        uniform mat4 projectionMatrix;
-        uniform mat4 viewMatrix;
-        uniform mat4 modelMatrix;
+        vertexShader,
+        fragmentShader,
+        uniforms: {
+          uTime: { value: 0 },
+          uTexture: { value: texture}
+        },
+        transparent: true,
+         side: THREE.DoubleSide,
 
-        attribute vec3 position;
-
-        void main()
-        {
-            gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
-        }
-    `,
-    fragmentShader: `
-        precision mediump float;
-
-        void main()
-        {
-            gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-        }
-    `
      });
+
+//Uniforms
+let clock = new THREE.Clock()
+material.uniforms.uTime.value = clock.getElapsedTime();
+
     const knot = new THREE.Mesh(geometry, material);
     scene.add(knot);
 
@@ -83,6 +71,13 @@ scene.add( light );
     // Animation loop
     const animate = function () {
       requestAnimationFrame(animate);
+
+      //updating uniform time to allow the shaders to play
+      material.uniforms.uTime.value += 0.01;
+
+      //knot rotation
+      knot.rotation.x = 0.05;
+      knot.rotation.z = 0.05;
 
       controls.update();
 
